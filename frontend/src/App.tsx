@@ -1,0 +1,33 @@
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { UserProvider } from './context/UserContext';
+import Index from './components/Index';
+import Login from './components/Login';
+import Dashboard from './components/Dashboard';
+import AIProfiles from './components/AIProfiles';
+import Matches from './components/Matches';
+import Threads from './components/Threads';
+import Groups from './components/Groups';
+import './App.css';
+
+function App() {
+  return (
+    <UserProvider>
+      <Router>
+        <div className="App">
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/ai-profiles" element={<AIProfiles />} />
+            <Route path="/matches" element={<Matches />} />
+            <Route path="/threads/:threadId" element={<Threads />} />
+            <Route path="/groups" element={<Groups />} />
+            <Route path="/" element={<Login />} />
+          </Routes>
+        </div>
+      </Router>
+    </UserProvider>
+  );
+}
+
+export default App;
