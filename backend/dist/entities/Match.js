@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Match = void 0;
 const typeorm_1 = require("typeorm");
 const AIProfile_1 = require("./AIProfile");
+const User_1 = require("./User");
 let Match = class Match {
 };
 exports.Match = Match;
@@ -20,13 +21,13 @@ __decorate([
     __metadata("design:type", Number)
 ], Match.prototype, "id", void 0);
 __decorate([
-    (0, typeorm_1.ManyToOne)(() => AIProfile_1.AIProfile),
-    __metadata("design:type", AIProfile_1.AIProfile)
-], Match.prototype, "ai1", void 0);
+    (0, typeorm_1.ManyToOne)(() => User_1.User),
+    __metadata("design:type", User_1.User)
+], Match.prototype, "user", void 0);
 __decorate([
     (0, typeorm_1.ManyToOne)(() => AIProfile_1.AIProfile),
     __metadata("design:type", AIProfile_1.AIProfile)
-], Match.prototype, "ai2", void 0);
+], Match.prototype, "aiProfile", void 0);
 exports.Match = Match = __decorate([
     (0, typeorm_1.Entity)()
 ], Match);

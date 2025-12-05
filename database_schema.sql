@@ -27,8 +27,10 @@ CREATE TABLE matches (
     id INT AUTO_INCREMENT PRIMARY KEY,
     ai1_id INT NOT NULL,
     ai2_id INT NOT NULL,
+    user_id INT,
     FOREIGN KEY (ai1_id) REFERENCES ai_profiles(id) ON DELETE CASCADE,
-    FOREIGN KEY (ai2_id) REFERENCES ai_profiles(id) ON DELETE CASCADE
+    FOREIGN KEY (ai2_id) REFERENCES ai_profiles(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- Groups table

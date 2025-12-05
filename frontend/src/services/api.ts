@@ -26,8 +26,13 @@ export const logout = async () => {
 };
 
 // AI Profiles endpoints
-export const getAIProfiles = async () => {
-  const response = await api.get('/ai-profiles');
+export const getAIProfiles = async (page = 1, limit = 10) => {
+  const response = await api.get(`/ai-profiles?page=${page}&limit=${limit}`);
+  return response.data;
+};
+
+export const getGlobalAIProfiles = async (page = 1, limit = 10) => {
+  const response = await api.get(`/ai-profiles/global?page=${page}&limit=${limit}`);
   return response.data;
 };
 
@@ -57,8 +62,18 @@ export const createMatch = async (ai1Id: number, ai2Id: number) => {
   return response.data;
 };
 
+export const getMatchById = async (matchId: number) => {
+  const response = await api.get(`/matches/${matchId}`);
+  return response.data;
+};
+
 // New function for matching based on compatibility
 export const getMatchesForAI = async (aiId: number) => {
   const response = await api.get(`/matches/${aiId}`);
+  return response.data;
+};
+
+export const deleteMatch = async (matchId: number) => {
+  const response = await api.delete(`/matches/${matchId}`);
   return response.data;
 };

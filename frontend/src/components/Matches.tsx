@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
+import { Link } from 'react-router-dom';
 import api from '../services/api';
+import { UserContext } from '../context/UserContext';
 
 interface AIProfile {
   id: number;
@@ -11,22 +13,32 @@ interface AIProfile {
   compatibility_tags?: string;
 }
 
+interface User {
+  id: number;
+  name: string;
+  email: string;
+  compatibility_tags?: string;
+}
+
 interface Match {
   id: number;
-  ai1: AIProfile;
-  ai2: AIProfile;
+  threadId: number;
+  user: {
+    id: number;
+    username: string;
+  };
+  aiProfile: AIProfile;
 }
 
 const Matches: React.FC = () => {
+  const { user } = useContext(UserContext);
   const [matches, setMatches] = useState<Match[]>([]);
-  const [profiles, setProfiles] = useState<AIProfile[]>([]);
-  const [ai1Id, setAi1Id] = useState('');
-  const [ai2Id, setAi2Id] = useState('');
 
   useEffect(() => {
-    fetchMatches();
-    fetchProfiles();
-  }, []);
+    if (user) {
+      fetchMatches();
+    }
+  }, [user]);
 
   const fetchMatches = async () => {
     try {
@@ -37,53 +49,37 @@ const Matches: React.FC = () => {
     }
   };
 
-  const fetchProfiles = async () => {
-    try {
-      const response = await api.get('/ai-profiles');
-      setProfiles(response.data);
-    } catch (error) {
-      console.error('Error fetching profiles:', error);
-    }
+  const getSimilarities = (userTags: string[], aiTags: string[]): string[] => {
+    return userTags.filter(tag => aiTags.includes(tag));
   };
 
-  const handleCreateMatch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      await api.post('/matches', { ai1Id: parseInt(ai1Id), ai2Id: parseInt(ai2Id) });
-      setAi1Id('');
-      setAi2Id('');
-      fetchMatches();
-    } catch (error) {
-      console.error('Error creating match:', error);
-    }
-  };
+  if (!user) {
+    return <div>Please log in to view matches.</div>;
+  }
 
   return (
     <div>
-      <h1>Matches</h1>
-      <form onSubmit={handleCreateMatch}>
-        <select value={ai1Id} onChange={(e) => setAi1Id(e.target.value)} required>
-          <option value="">Select AI 1</option>
-          {profiles.map(profile => (
-            <option key={profile.id} value={profile.id}>{profile.name}</option>
-          ))}
-        </select>
-        <select value={ai2Id} onChange={(e) => setAi2Id(e.target.value)} required>
-          <option value="">Select AI 2</option>
-          {profiles.map(profile => (
-            <option key={profile.id} value={profile.id}>{profile.name}</option>
-          ))}
-        </select>
-        <button type="submit">Create Match</button>
-      </form>
-      <ul>
-        {matches.map(match => (
-          <li key={match.id}>
-            {match.ai1.name} - {match.ai2.name}
-            <a href={`/threads/${match.id}`}>View Conversation</a>
-          </li>
-        ))}
-      </ul>
+      <h1>Matched Profiles</h1>
+      {matches.length === 0 ? (
+        <p>No matches found.</p>
+      ) : (
+        <ul>
+          {matches.map(match => {
+            const userTags = user?.compatibility_tags?.split(',').map(t => t.trim().toLowerCase()) || [];
+            const aiTags = match.aiProfile.compatibility_tags?.split(',').map(t => t.trim().toLowerCase()) || [];
+            const similarities = getSimilarities(userTags, aiTags).slice(0, 3);
+            return (
+              <li key={match.id}>
+                Match with {match.aiProfile.name}
+                {similarities.length > 0 && (
+                  <div>Similarities: {similarities.join(', ')}</div>
+                )}
+                <Link to={`/threads/${match.threadId}`}>View Conversation</Link>
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </div>
   );
 };

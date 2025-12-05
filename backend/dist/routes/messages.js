@@ -20,7 +20,7 @@ router.use(auth_1.auth);
 router.get('/:threadId', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const messages = yield db_1.AppDataSource.manager.find(Message_1.Message, {
         where: { thread: { id: parseInt(req.params.threadId) } },
-        relations: ['sender'],
+        relations: ['sender', 'sender.user', 'thread', 'thread.match', 'thread.match.ai1', 'thread.match.ai2'],
         order: { timestamp: 'ASC' }
     });
     res.json(messages);

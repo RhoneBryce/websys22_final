@@ -13,6 +13,7 @@ const express_1 = require("express");
 const db_1 = require("../db");
 const AIProfile_1 = require("../entities/AIProfile");
 const User_1 = require("../entities/User");
+const Match_1 = require("../entities/Match");
 const auth_1 = require("../middleware/auth");
 const router = (0, express_1.Router)();
 router.use(auth_1.auth);
@@ -40,10 +41,14 @@ router.put('/:id', (req, res) => __awaiter(void 0, void 0, void 0, function* () 
     res.json(aiProfile);
 }));
 router.delete('/:id', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const userId = req.user.id;
-    const aiProfile = yield db_1.AppDataSource.manager.findOne(AIProfile_1.AIProfile, { where: { id: parseInt(req.params.id), user: { id: userId } } });
+    const aiProfile = yield db_1.AppDataSource.manager.findOne(AIProfile_1.AIProfile, { where: { id: parseInt(req.params.id) } });
     if (!aiProfile)
         return res.status(404).json({ message: 'AI Profile not found' });
+    // Delete associated matches
+    yield db_1.AppDataSource.manager.delete(Match_1.Match, [
+        { ai1: { id: aiProfile.id } },
+        { ai2: { id: aiProfile.id } }
+    ]);
     yield db_1.AppDataSource.manager.remove(aiProfile);
     res.json({ message: 'AI Profile deleted' });
 }));

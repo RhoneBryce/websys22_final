@@ -11,8 +11,47 @@ router.use(auth);
 
 router.get('/', async (req, res) => {
   const userId = (req as any).user.id;
-  const aiProfiles = await AppDataSource.manager.find(AIProfile, { where: { user: { id: userId } } });
-  res.json(aiProfiles);
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 10;
+  const offset = (page - 1) * limit;
+
+  const [aiProfiles, total] = await AppDataSource.manager.findAndCount(AIProfile, {
+    where: { user: { id: userId } },
+    skip: offset,
+    take: limit
+  });
+
+  res.json({
+    data: aiProfiles,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit)
+    }
+  });
+});
+
+router.get('/global', async (req, res) => {
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 10;
+  const offset = (page - 1) * limit;
+
+  const [aiProfiles, total] = await AppDataSource.manager.findAndCount(AIProfile, {
+    where: { user: null },
+    skip: offset,
+    take: limit
+  });
+
+  res.json({
+    data: aiProfiles,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit)
+    }
+  });
 });
 
 router.post('/', async (req, res) => {

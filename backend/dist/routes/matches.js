@@ -13,56 +13,57 @@ const express_1 = require("express");
 const db_1 = require("../db");
 const Match_1 = require("../entities/Match");
 const AIProfile_1 = require("../entities/AIProfile");
+const Thread_1 = require("../entities/Thread");
+const Message_1 = require("../entities/Message");
+const User_1 = require("../entities/User");
 const auth_1 = require("../middleware/auth");
+const faker_1 = require("@faker-js/faker");
 const router = (0, express_1.Router)();
 router.use(auth_1.auth);
 router.get('/', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const userId = req.user.id;
     const matches = yield db_1.AppDataSource.manager.find(Match_1.Match, {
-        where: { ai1: { user: { id: userId } } },
-        relations: ['ai1', 'ai2']
+        where: { user: { id: userId } },
+        relations: ['user', 'aiProfile']
     });
     res.json(matches);
 }));
 router.post('/', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { ai1Id, ai2Id } = req.body;
     const userId = req.user.id;
-    const ai1 = yield db_1.AppDataSource.manager.findOne(AIProfile_1.AIProfile, { where: { id: ai1Id, user: { id: userId } } });
-    const ai2 = yield db_1.AppDataSource.manager.findOne(AIProfile_1.AIProfile, { where: { id: ai2Id, user: { id: userId } } });
-    if (!ai1 || !ai2)
-        return res.status(404).json({ message: 'AI Profile not found' });
-    const match = db_1.AppDataSource.manager.create(Match_1.Match, { ai1, ai2 });
+    const user = yield db_1.AppDataSource.manager.findOne(User_1.User, { where: { id: userId } });
+    if (!user)
+        return res.status(404).json({ message: 'User not found' });
+    // Generate AI profile using Faker
+    const aiProfile = db_1.AppDataSource.manager.create(AIProfile_1.AIProfile, {
+        name: faker_1.faker.person.fullName(),
+        personality: faker_1.faker.helpers.arrayElement(['Friendly', 'Shy', 'Outgoing', 'Introverted', 'Adventurous']),
+        description: faker_1.faker.lorem.sentence(),
+        hobbies: faker_1.faker.helpers.arrayElement(['Reading', 'Sports', 'Music', 'Travel', 'Cooking']),
+        model_type: faker_1.faker.helpers.arrayElement(['GPT', 'Claude', 'Gemini']),
+        compatibility_tags: faker_1.faker.lorem.words(3),
+        user: null // Generated AI profiles don't belong to a user
+    });
+    yield db_1.AppDataSource.manager.save(aiProfile);
+    // Create match
+    const match = db_1.AppDataSource.manager.create(Match_1.Match, { user, aiProfile });
     yield db_1.AppDataSource.manager.save(match);
-    res.status(201).json(match);
-}));
-router.get('/:aiId', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { aiId } = req.params;
-    const userId = req.user.id;
-    const aiProfile = yield db_1.AppDataSource.manager.findOne(AIProfile_1.AIProfile, { where: { id: parseInt(aiId), user: { id: userId } } });
-    if (!aiProfile)
-        return res.status(404).json({ message: 'AI Profile not found' });
-    const allProfiles = yield db_1.AppDataSource.manager.find(AIProfile_1.AIProfile, { where: { user: { id: userId } } });
-    const otherProfiles = allProfiles.filter(p => p.id !== aiProfile.id);
-    const tags1 = aiProfile.compatibility_tags ? aiProfile.compatibility_tags.split(',').map(t => t.trim()) : [];
-    const compatible = otherProfiles.map(p => {
-        const tags2 = p.compatibility_tags ? p.compatibility_tags.split(',').map(t => t.trim()) : [];
-        const shared = tags1.filter(t => tags2.includes(t)).length;
-        return { profile: p, shared };
-    }).sort((a, b) => b.shared - a.shared).slice(0, 5);
-    const matches = [];
-    for (const comp of compatible) {
-        let match = yield db_1.AppDataSource.manager.findOne(Match_1.Match, {
-            where: [
-                { ai1: { id: aiProfile.id }, ai2: { id: comp.profile.id } },
-                { ai1: { id: comp.profile.id }, ai2: { id: aiProfile.id } }
-            ]
+    // Create thread
+    const thread = db_1.AppDataSource.manager.create(Thread_1.Thread, { match });
+    yield db_1.AppDataSource.manager.save(thread);
+    // Generate fake message history
+    const messages = [];
+    for (let i = 0; i < faker_1.faker.number.int({ min: 5, max: 10 }); i++) {
+        const isUserMessage = faker_1.faker.datatype.boolean();
+        const message = db_1.AppDataSource.manager.create(Message_1.Message, {
+            thread,
+            user: isUserMessage ? user : null,
+            aiProfile: isUserMessage ? null : aiProfile,
+            message_text: faker_1.faker.lorem.sentence(),
+            timestamp: faker_1.faker.date.recent({ days: 7 })
         });
-        if (!match) {
-            match = db_1.AppDataSource.manager.create(Match_1.Match, { ai1: aiProfile, ai2: comp.profile });
-            yield db_1.AppDataSource.manager.save(match);
-        }
-        matches.push({ match, sharedTags: comp.shared });
+        messages.push(message);
     }
-    res.json(matches);
+    yield db_1.AppDataSource.manager.save(messages);
+    res.status(201).json(match);
 }));
 exports.default = router;

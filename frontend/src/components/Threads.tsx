@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useState, useEffect, useContext, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { UserContext } from '../context/UserContext';
 
@@ -17,17 +17,19 @@ interface Message {
   id: number;
   message_text: string;
   timestamp: string;
-  sender: {
+  user: {
     id: number;
-    name: string;
-    user: {
-      id: number;
-    };
-  };
+    username: string;
+  } | null;
+  aiProfile: AIProfile | null;
   thread: {
     id: number;
     match: {
       id: number;
+      user: {
+        id: number;
+        username: string;
+      } | null;
       ai1: AIProfile;
       ai2: AIProfile;
     };
@@ -37,15 +39,17 @@ interface Message {
 const Threads: React.FC = () => {
   const { threadId } = useParams<{ threadId: string }>();
   const [messages, setMessages] = useState<Message[]>([]);
-  const [newMessage, setNewMessage] = useState('');
-  const [senderId, setSenderId] = useState<number | ''>('');
-  const [aiProfiles, setAiProfiles] = useState<AIProfile[]>([]);
   const { user } = useContext(UserContext);
+  const navigate = useNavigate();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchMessages();
-    fetchAIProfiles();
   }, [threadId, user]);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   const fetchMessages = async () => {
     try {
@@ -56,65 +60,33 @@ const Threads: React.FC = () => {
     }
   };
 
-  const fetchAIProfiles = async () => {
-    if (!user) return;
-    try {
-      const response = await api.get('/ai-profiles');
-      setAiProfiles(response.data);
-    } catch (error) {
-      console.error('Error fetching AI profiles:', error);
-    }
-  };
-
-  const sendMessage = async () => {
-    if (!senderId) return;
-    try {
-      await api.post(`/messages/${threadId}`, { senderId: Number(senderId), message_text: newMessage });
-      setNewMessage('');
-      fetchMessages();
-    } catch (error) {
-      console.error('Error sending message:', error);
-    }
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   return (
-    <div>
-      <h2>Thread {threadId}</h2>
-      <div>
+    <div className="threads-container">
+      <button onClick={() => navigate('/dashboard')} className="back-button">Back to Dashboard</button>
+      <h2 className="conversation-title">Conversation</h2>
+      <div className="messages-container">
         {messages.map((msg) => {
-          const isUserMessage = msg.sender.user.id === user?.id;
-          let displayText;
-          if (isUserMessage) {
-            const matchedAI = msg.sender.id === msg.thread.match.ai1.id ? msg.thread.match.ai2 : msg.thread.match.ai1;
-            displayText = `From you: Sent to: ${matchedAI.name}`;
-          } else {
-            displayText = `${msg.sender.name}:`;
-          }
+          const isUserMessage = msg.user && msg.user.id === user?.id;
+          const isAI1 = msg.aiProfile && msg.aiProfile.id === msg.thread.match.ai1.id;
+          const senderName = isUserMessage ? 'You' : msg.aiProfile ? msg.aiProfile.name : 'Unknown';
+          const messageClass = isUserMessage ? 'user-message' : isAI1 ? 'ai1-message' : 'ai2-message';
           return (
-            <div key={msg.id}>
-              <strong>{displayText}</strong> {msg.message_text} <em>({new Date(msg.timestamp).toLocaleString()})</em>
+            <div key={msg.id} className={`message ${messageClass}`}>
+              <div className="message-bubble">
+                <strong>{senderName}:</strong> {msg.message_text}
+              </div>
+              <div className="message-timestamp">
+                {new Date(msg.timestamp).toLocaleString()}
+              </div>
             </div>
           );
         })}
+        <div ref={messagesEndRef} />
       </div>
-      <select
-        value={senderId}
-        onChange={(e) => setSenderId(Number(e.target.value) || '')}
-      >
-        <option value="">Select AI Profile</option>
-        {aiProfiles.map((profile) => (
-          <option key={profile.id} value={profile.id}>
-            {profile.name}
-          </option>
-        ))}
-      </select>
-      <input
-        type="text"
-        placeholder="Message"
-        value={newMessage}
-        onChange={(e) => setNewMessage(e.target.value)}
-      />
-      <button onClick={sendMessage}>Send</button>
     </div>
   );
 };

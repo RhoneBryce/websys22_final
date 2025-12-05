@@ -13,6 +13,7 @@ exports.Message = void 0;
 const typeorm_1 = require("typeorm");
 const Thread_1 = require("./Thread");
 const AIProfile_1 = require("./AIProfile");
+const User_1 = require("./User");
 let Message = class Message {
 };
 exports.Message = Message;
@@ -25,9 +26,13 @@ __decorate([
     __metadata("design:type", Thread_1.Thread)
 ], Message.prototype, "thread", void 0);
 __decorate([
-    (0, typeorm_1.ManyToOne)(() => AIProfile_1.AIProfile),
+    (0, typeorm_1.ManyToOne)(() => User_1.User, { nullable: true }),
+    __metadata("design:type", User_1.User)
+], Message.prototype, "user", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => AIProfile_1.AIProfile, { nullable: true }),
     __metadata("design:type", AIProfile_1.AIProfile)
-], Message.prototype, "sender", void 0);
+], Message.prototype, "aiProfile", void 0);
 __decorate([
     (0, typeorm_1.Column)(),
     __metadata("design:type", String)

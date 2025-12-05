@@ -12,7 +12,7 @@ router.use(auth);
 router.get('/:threadId', async (req, res) => {
   const messages = await AppDataSource.manager.find(Message, {
     where: { thread: { id: parseInt(req.params.threadId) } },
-    relations: ['sender', 'sender.user', 'thread', 'thread.match', 'thread.match.ai1', 'thread.match.ai2'],
+    relations: ['user', 'aiProfile', 'thread', 'thread.match', 'thread.match.ai1', 'thread.match.ai2'],
     order: { timestamp: 'ASC' }
   });
   res.json(messages);
@@ -21,12 +21,12 @@ router.get('/:threadId', async (req, res) => {
 
 
 router.post('/:threadId', async (req, res) => {
-  const { senderId, message_text } = req.body;
+  const { message_text } = req.body;
   const userId = (req as any).user.id;
+  const user = (req as any).user;
   const thread = await AppDataSource.manager.findOne(Thread, { where: { id: parseInt(req.params.threadId) } });
-  const sender = await AppDataSource.manager.findOne(AIProfile, { where: { id: senderId, user: { id: userId } } });
-  if (!thread || !sender) return res.status(404).json({ message: 'Thread or AI Profile not found' });
-  const message = AppDataSource.manager.create(Message, { thread, sender, message_text });
+  if (!thread) return res.status(404).json({ message: 'Thread not found' });
+  const message = AppDataSource.manager.create(Message, { thread, user, aiProfile: null, message_text });
   await AppDataSource.manager.save(message);
   res.status(201).json(message);
 });

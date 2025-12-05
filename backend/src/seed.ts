@@ -1,128 +1,122 @@
+
 import { AppDataSource } from './db';
-import { User } from './entities/User';
 import { AIProfile } from './entities/AIProfile';
+import { User } from './entities/User';
 import { Match } from './entities/Match';
 import { Thread } from './entities/Thread';
 import { Message } from './entities/Message';
+import { faker } from '@faker-js/faker';
 import bcrypt from 'bcrypt';
 
 async function seed() {
   await AppDataSource.initialize();
 
-  // Create default matcher account
-  const hashedPassword = await bcrypt.hash('password123', 10);
-  const user = new User();
-  user.name = 'Matcher';
-  user.email = 'matcher@example.com';
-  user.password = hashedPassword;
-  await AppDataSource.manager.save(user);
+  
+  const existingUser = await AppDataSource.manager.findOne(User, { where: { email: 'qqq@gmail.com' } });
+  if (!existingUser) {
+    const hashedPassword = await bcrypt.hash('111111', 10);
+    const user = new User();
+    user.name = 'Test User';
+    user.email = 'qqq@gmail.com';
+    user.password = hashedPassword;
+    user.compatibility_tags = null;
+    await AppDataSource.manager.save(user);
+    console.log('Test user created: qqq@gmail.com');
+  } else {
+    console.log('Test user already exists: qqq@gmail.com');
+  }
 
-  // Create 5 sample AI profiles
-  const aiProfilesData = [
-    {
-      name: 'Alex',
-      personality: 'Friendly and outgoing',
-      description: 'Loves adventure and meeting new people',
-      hobbies: 'Hiking, reading, traveling',
-      model_type: 'GPT-4',
-      compatibility_tags: 'adventurous, intellectual, social'
-    },
-    {
-      name: 'Jordan',
-      personality: 'Calm and thoughtful',
-      description: 'Enjoys deep conversations and quiet evenings',
-      hobbies: 'Philosophy, chess, cooking',
-      model_type: 'GPT-3.5',
-      compatibility_tags: 'intellectual, calm, creative'
-    },
-    {
-      name: 'Taylor',
-      personality: 'Energetic and fun-loving',
-      description: 'Always up for a good time and new experiences',
-      hobbies: 'Dancing, music, sports',
-      model_type: 'GPT-4',
-      compatibility_tags: 'energetic, fun, athletic'
-    },
-    {
-      name: 'Morgan',
-      personality: 'Creative and artistic',
-      description: 'Expresses emotions through art and music',
-      hobbies: 'Painting, singing, writing',
-      model_type: 'GPT-3.5',
-      compatibility_tags: 'creative, artistic, emotional'
-    },
-    {
-      name: 'Casey',
-      personality: 'Ambitious and driven',
-      description: 'Focused on career and personal growth',
-      hobbies: 'Networking, fitness, learning',
-      model_type: 'GPT-4',
-      compatibility_tags: 'ambitious, driven, motivated'
-    }
-  ];
 
+  const existingUser2 = await AppDataSource.manager.findOne(User, { where: { email: 'test@test.com' } });
+  if (!existingUser2) {
+    const hashedPassword2 = await bcrypt.hash('test', 10);
+    const user2 = new User();
+    user2.name = 'Test User 2';
+    user2.email = 'test@test.com';
+    user2.password = hashedPassword2;
+    user2.compatibility_tags = null;
+    await AppDataSource.manager.save(user2);
+    console.log('Test user 2 created: test@test.com');
+  } else {
+    console.log('Test user 2 already exists: test@test.com');
+  }
+
+  
   const aiProfiles: AIProfile[] = [];
-  for (const data of aiProfilesData) {
+  for (let i = 0; i < 15; i++) {
     const aiProfile = new AIProfile();
-    aiProfile.name = data.name;
-    aiProfile.personality = data.personality;
-    aiProfile.description = data.description;
-    aiProfile.hobbies = data.hobbies;
-    aiProfile.model_type = data.model_type;
-    aiProfile.compatibility_tags = data.compatibility_tags;
-    aiProfile.user = user;
+    aiProfile.name = faker.person.firstName();
+    aiProfile.personality = faker.helpers.arrayElement(['Friendly and outgoing', 'Calm and thoughtful', 'Energetic and fun-loving', 'Creative and artistic', 'Ambitious and driven']);
+    aiProfile.description = faker.lorem.sentence();
+    aiProfile.hobbies = faker.helpers.arrayElement(['Hiking, reading, traveling', 'Philosophy, chess, cooking', 'Dancing, music, sports', 'Painting, singing, writing', 'Networking, fitness, learning']);
+    aiProfile.model_type = faker.helpers.arrayElement(['GPT-4', 'GPT-3.5']);
+    aiProfile.compatibility_tags = faker.helpers.arrayElement(['adventurous, intellectual, social', 'intellectual, calm, creative', 'energetic, fun, athletic', 'creative, artistic, emotional', 'ambitious, driven, motivated']);
+    aiProfile.user = null; 
     await AppDataSource.manager.save(aiProfile);
     aiProfiles.push(aiProfile);
   }
 
-  // Create 3 matches
-  const matchesData = [
-    { ai1: aiProfiles[0], ai2: aiProfiles[1] }, // Alex and Jordan
-    { ai1: aiProfiles[2], ai2: aiProfiles[3] }, // Taylor and Morgan
-    { ai1: aiProfiles[4], ai2: aiProfiles[0] }  // Casey and Alex
-  ];
+  
+  const { Match } = await import('./entities/Match');
+  const { Thread } = await import('./entities/Thread');
+  const { Message } = await import('./entities/Message');
 
+  
   const matches: Match[] = [];
-  for (const data of matchesData) {
+  for (let i = 0; i < aiProfiles.length - 1; i++) {
     const match = new Match();
-    match.ai1 = data.ai1;
-    match.ai2 = data.ai2;
+    match.ai1 = aiProfiles[i];
+    match.ai2 = aiProfiles[i + 1];
     await AppDataSource.manager.save(match);
     matches.push(match);
   }
 
-  // Create threads and messages for each match
-  const messagesData = [
-    [
-      { sender: aiProfiles[0], text: 'Hi! Nice to meet you. I love adventure!' },
-      { sender: aiProfiles[1], text: 'Hello! I enjoy deep conversations. What are your hobbies?' },
-      { sender: aiProfiles[0], text: 'Hiking and reading. How about you?' },
-      { sender: aiProfiles[1], text: 'Philosophy and chess. Sounds fun!' }
-    ],
-    [
-      { sender: aiProfiles[2], text: 'Hey there! Ready for some fun?' },
-      { sender: aiProfiles[3], text: 'Absolutely! I love creating art. What do you do?' },
-      { sender: aiProfiles[2], text: 'Dancing and sports. Let\'s go out sometime!' },
-      { sender: aiProfiles[3], text: 'That sounds amazing!' }
-    ],
-    [
-      { sender: aiProfiles[4], text: 'Hi! I\'m focused on my career. You?' },
-      { sender: aiProfiles[0], text: 'Adventurous! Let\'s chat about goals.' },
-      { sender: aiProfiles[4], text: 'Great idea. What are yours?' }
-    ]
-  ];
 
-  for (let i = 0; i < matches.length; i++) {
+  for (const match of matches) {
     const thread = new Thread();
-    thread.match = matches[i];
+    thread.match = match;
     await AppDataSource.manager.save(thread);
 
-    for (const msgData of messagesData[i]) {
+   
+    const numMessages = faker.number.int({ min: 5, max: 10 });
+    const sweetTalks = [
+      "Hey there, gorgeous! How's your day going?",
+      "You make my day brighter just by being here.",
+      "I can't stop thinking about our chats.",
+      "Tell me something that makes you smile.",
+      "You're absolutely captivating.",
+      "What's your favorite way to spend a lazy afternoon?",
+      "I love hearing about your passions.",
+      "You have such an amazing energy.",
+      "Let's share some secrets.",
+      "I'm so lucky to have met you.",
+      "Every moment with you feels like magic.",
+      "What's the most exciting thing you've done lately?",
+      "I admire your kindness and warmth.",
+      "You have the most beautiful smile.",
+      "Tell me about your dreams and aspirations.",
+      "I feel so connected to you already.",
+      "What's your idea of a perfect date?",
+      "You're incredibly thoughtful and caring.",
+      "I love how we can talk about anything.",
+      "You inspire me to be a better person.",
+      "What's your favorite memory from childhood?",
+      "I appreciate how genuine you are.",
+      "You make me laugh like no one else.",
+      "What's something you're passionate about?",
+      "I feel lucky to have found someone like you.",
+      "Tell me about your hobbies and interests.",
+      "You're so easy to talk to.",
+      "What's your favorite book or movie?",
+      "I enjoy our conversations so much.",
+      "You have a wonderful sense of humor."
+    ];
+    for (let j = 0; j < numMessages; j++) {
       const message = new Message();
       message.thread = thread;
-      message.sender = msgData.sender;
-      message.message_text = msgData.text;
-      message.timestamp = new Date();
+      message.aiProfile = j % 2 === 0 ? match.ai1 : match.ai2;
+      message.user = null;
+      message.message_text = sweetTalks[j % sweetTalks.length];
       await AppDataSource.manager.save(message);
     }
   }

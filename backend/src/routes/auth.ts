@@ -1,3 +1,4 @@
+/// <reference path="../types/passport.d.ts" />
 import { Router } from 'express';
 import passport from '../passport';
 import bcrypt from 'bcrypt';
@@ -12,12 +13,13 @@ router.post('/register', async (req, res) => {
     if (!name || !email || !password) {
       return res.status(400).json({ message: 'Name, email and password are required' });
     }
-    const existingUser = await AppDataSource.manager.findOne(User, { where: { email } });
+    const trimmedEmail = email.trim().toLowerCase();
+    const existingUser = await AppDataSource.manager.findOne(User, { where: { email: trimmedEmail } });
     if (existingUser) {
       return res.status(409).json({ message: 'Email already in use' });
     }
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = AppDataSource.manager.create(User, { name, email, password: hashedPassword });
+    const user = AppDataSource.manager.create(User, { name, email: trimmedEmail, password: hashedPassword });
     await AppDataSource.manager.save(user);
     res.status(201).json({ message: 'User registered' });
   } catch (error) {
@@ -34,7 +36,7 @@ router.post('/login', (req, res, next) => {
     if (!user) {
       return res.status(401).json({ message: info?.message || 'Invalid credentials' });
     }
-    req.logIn(user, (err) => {
+    (req as any).logIn(user, (err) => {
       if (err) {
         return next(err);
       }
@@ -44,20 +46,25 @@ router.post('/login', (req, res, next) => {
 });
 
 router.post('/logout', (req, res) => {
-  req.logout((err) => {
+  (req as any).logout((err) => {
     if (err) {
       return res.status(500).json({ message: 'Could not log out' });
     }
-    res.json({ message: 'Logged out' });
+    (req as any).session.destroy((err) => {
+      if (err) {
+        return res.status(500).json({ message: 'Could not destroy session' });
+      }
+      res.json({ message: 'Logged out' });
+    });
   });
 });
 
 router.get('/status', (req, res) => {
-  if (!req.user) {
+  if (!(req as any).user) {
     return res.status(401).json({ message: 'Not authenticated' });
   }
-  const user = req.user as User;
-  res.json({ id: user.id, name: user.name, email: user.email });
+  const user = (req as any).user as User;
+  res.json({ id: user.id, name: user.name, email: user.email, compatibility_tags: user.compatibility_tags });
 });
 
 export default router;

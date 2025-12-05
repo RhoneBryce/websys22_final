@@ -44,7 +44,7 @@ __decorate([
     __metadata("design:type", String)
 ], AIProfile.prototype, "compatibility_tags", void 0);
 __decorate([
-    (0, typeorm_1.ManyToOne)('User'),
+    (0, typeorm_1.ManyToOne)('User', { nullable: true }),
     __metadata("design:type", User_1.User)
 ], AIProfile.prototype, "user", void 0);
 exports.AIProfile = AIProfile = __decorate([

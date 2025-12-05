@@ -16,7 +16,7 @@ exports.AppDataSource = new typeorm_1.DataSource({
     username: process.env.DB_USERNAME,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_DATABASE,
-    synchronize: true,
+    synchronize: false,
     logging: false,
     entities: [User_1.User, AIProfile_1.AIProfile, Match_1.Match, Thread_1.Thread, Message_1.Message, Group_1.Group, GroupMember_1.GroupMember],
 });

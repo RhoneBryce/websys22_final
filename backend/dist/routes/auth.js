@@ -38,9 +38,21 @@ router.post('/register', (req, res) => __awaiter(void 0, void 0, void 0, functio
         res.status(500).json({ message: 'Registration failed' });
     }
 }));
-router.post('/login', passport_1.default.authenticate('local'), (req, res) => {
-    const user = req.user;
-    res.json({ message: 'Logged in', user: { id: user.id, name: user.name, email: user.email } });
+router.post('/login', (req, res, next) => {
+    passport_1.default.authenticate('local', (err, user, info) => {
+        if (err) {
+            return next(err);
+        }
+        if (!user) {
+            return res.status(401).json({ message: (info === null || info === void 0 ? void 0 : info.message) || 'Invalid credentials' });
+        }
+        req.logIn(user, (err) => {
+            if (err) {
+                return next(err);
+            }
+            res.json({ message: 'Logged in', user: { id: user.id, name: user.name, email: user.email } });
+        });
+    })(req, res, next);
 });
 router.post('/logout', (req, res) => {
     req.logout((err) => {
@@ -54,6 +66,7 @@ router.get('/status', (req, res) => {
     if (!req.user) {
         return res.status(401).json({ message: 'Not authenticated' });
     }
-    res.json({ id: req.user.id, name: req.user.name, email: req.user.email });
+    const user = req.user;
+    res.json({ id: user.id, name: user.name, email: user.email });
 });
 exports.default = router;

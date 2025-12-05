@@ -24,6 +24,6 @@ export class AIProfile {
   @Column({ nullable: true })
   compatibility_tags: string;
 
-  @ManyToOne('User')
-  user: User;
+  @ManyToOne('User', { nullable: true })
+  user: User | null;
 }

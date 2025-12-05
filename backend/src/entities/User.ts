@@ -15,6 +15,9 @@ export class User {
   @Column()
   password: string;
 
+  @Column({ nullable: true })
+  compatibility_tags: string;
+
   @OneToMany('AIProfile', 'user')
   aiProfiles: AIProfile[];
 }

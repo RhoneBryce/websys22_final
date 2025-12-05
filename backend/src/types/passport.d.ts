@@ -6,3 +6,10 @@ declare global {
     interface User extends User {}
   }
 }
+
+declare module 'passport' {
+  interface PassportStatic {
+    initialize(): any;
+    session(): any;
+  }
+}

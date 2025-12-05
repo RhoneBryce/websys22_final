@@ -1,6 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
 import { Thread } from './Thread';
 import { AIProfile } from './AIProfile';
+import { User } from './User';
 
 @Entity()
 export class Message {
@@ -10,8 +11,11 @@ export class Message {
   @ManyToOne(() => Thread)
   thread: Thread;
 
+  @ManyToOne(() => User, { nullable: true })
+  user: User | null;
+
   @ManyToOne(() => AIProfile)
-  sender: AIProfile;
+  aiProfile: AIProfile;
 
   @Column()
   message_text: string;

@@ -8,6 +8,7 @@ import express from 'express';
 import session from 'express-session';
 import cors from 'cors';
 import passport from './passport';
+
 import { AppDataSource } from './db';
 import authRoutes from './routes/auth';
 import aiProfileRoutes from './routes/aiProfiles';
@@ -27,10 +28,15 @@ app.use(session({
   secret: process.env.SESSION_SECRET || 'default_secret',
   resave: false,
   saveUninitialized: false,
-  cookie: { secure: false } // Set to true in production with HTTPS
+  cookie: {
+    secure: false, 
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000, 
+    sameSite: 'lax'
+  }
 }));
-app.use(passport.initialize());
-app.use(passport.session());
+app.use((passport as any).initialize());
+app.use((passport as any).session());
 app.use(express.json());
 
 app.get('/', (req, res) => {
